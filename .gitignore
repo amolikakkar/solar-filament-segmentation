@@ -1,0 +1,11 @@
+data/
+*.csv
+!weights/*.csv
+__pycache__/
+.ipynb_checkpoints/
+# local-only folders (not part of the solution)
+backups/
+logs/
+filament-seg/
+# personal working notes (not part of the solution)
+CLAUDE.md

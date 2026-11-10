@@ -1,0 +1,12 @@
+{
+  "work_size": 1024,
+  "smooth_sigma": 1.2,
+  "blackhat_size": 31,
+  "k_low": 2.0,
+  "k_high": 5.5,
+  "limb_shrink": 0.04,
+  "sunspot_max_intensity": 0.55,
+  "sunspot_max_ecc": 0.85,
+  "min_area": 40,
+  "edge_frac": 0.35
+}

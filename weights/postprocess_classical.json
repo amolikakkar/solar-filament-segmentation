@@ -1,0 +1,12 @@
+{
+  "prob_threshold": 0.5,
+  "min_fragment": 60,
+  "hole_size": 200,
+  "link_radius": 20,
+  "min_instance": 400,
+  "work_size": 1024,
+  "min_dark": 0.1,
+  "min_elong": 1.5,
+  "max_rho": 0.94,
+  "grow": 1
+}
