@@ -7,5 +7,9 @@ __pycache__/
 backups/
 logs/
 filament-seg/
+# duplicate of weights/unet.pt as downloaded from the Kaggle GPU run
+weights/gpu/
 # personal working notes (not part of the solution)
 CLAUDE.md
+RESULTS_REPORT.md
+REPORT_DRAFT.md

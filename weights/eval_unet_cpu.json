@@ -1,0 +1,26 @@
+{
+  "PQ_dataset": 0.33851551289820575,
+  "PQ_mean_per_image": 0.32702726640869095,
+  "SQ": 0.6693234776885288,
+  "RQ": 0.5057577153385536,
+  "TP": 549,
+  "FP": 415,
+  "FN": 658,
+  "mean_IoU_matched": 0.669323477688529,
+  "mean_Dice_matched": 0.7987138899627917,
+  "one_to_many": 39,
+  "many_to_one": 28,
+  "files": 106,
+  "entries": 168,
+  "sec_per_image": 9.018191618739435,
+  "org_one_to_many_iou0": 42,
+  "org_many_to_one_iou0": 31,
+  "mean_Dice_all_overlapping_pairs": 0.6923938202033415,
+  "method": "unet",
+  "weights": "weights\\unet_cpu.pt",
+  "pp": "weights\\postprocess_unet_cpu.json",
+  "PQ_dataset_ci95": [
+    0.3131451909030963,
+    0.3635147560969833
+  ]
+}

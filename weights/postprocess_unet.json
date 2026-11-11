@@ -1,0 +1,8 @@
+{
+  "prob_threshold": 0.65,
+  "min_fragment": 60,
+  "hole_size": 200,
+  "link_radius": 0,
+  "min_instance": 400,
+  "work_size": 1024
+}
