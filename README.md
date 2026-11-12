@@ -11,7 +11,7 @@ Validation = 106 held-out image files (168 annotator entries), scored the organi
 
 | Model | Validation PQ | SQ | RQ | TP / FP / FN | Kaggle public PQ | CPU s / image |
 |---|---|---|---|---|---|---|
-| **U-Net, ImageNet ResNet-50 encoder (final)** | **0.419** (0.399–0.439) | 0.676 | 0.620 | 763 / 493 / 444 | to be added | 15.1 |
+| **U-Net, ImageNet ResNet-50 encoder (final)** | **0.419** (0.399–0.439) | 0.676 | 0.620 | 763 / 493 / 444 | 0.33 | 15.1 |
 | U-Net, ImageNet ResNet-34 encoder (previous) | 0.411 (0.387–0.433) | 0.678 | 0.606 | 763 / 549 / 444 | 0.33 | 6.0 |
 | Small U-Net (1.9M parameters, trained 6 h on a laptop CPU) | 0.338 (0.313–0.364) | 0.669 | 0.506 | 549 / 415 / 658 | 0.27 | 8.5 |
 | Classical (no training) | 0.262 (0.236–0.288) | 0.650 | 0.403 | 420 / 460 / 787 | 0.21 | 2.1 |

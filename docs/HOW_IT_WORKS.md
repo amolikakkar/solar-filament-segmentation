@@ -86,13 +86,16 @@ image ─► find the disk ─► flatten brightness ─► U-Net ─► probabi
 
 | Model | Validation PQ (106 files) | Kaggle public PQ | Seconds per image (laptop CPU) |
 |---|---|---|---|
-| **U-Net + ResNet-50 (final)** | **0.419** (95% range 0.399–0.439) | to be added | 15.1 |
+| **U-Net + ResNet-50 (final)** | **0.419** (95% range 0.399–0.439) | 0.33 | 15.1 |
 | U-Net + ResNet-34 (previous submission) | 0.411 (95% range 0.387–0.433) | 0.33 | 6.0 |
 | Small U-Net trained 6 h on the laptop CPU | 0.338 | 0.27 | 8.5 |
 | Classical image processing (no learning) | 0.262 | 0.21 | 2.1 |
 
-* For the three earlier methods the public score is about **0.8 × the validation score**. So the validation set
+* For every method the public score is about **0.8 × the validation score**. So the validation set
   ranks methods correctly; the test images are a bit harder.
+* The two pretrained U-Nets both show **0.33** on Kaggle (it shows only two decimals). Their validation
+  difference (0.419 vs 0.411) is small and inside the 95% ranges, so a tie on ~90 public images is expected.
+  We keep the ResNet-50 as final: higher validation PQ and 10% fewer false detections.
 * The final model finds 763 of 1,207 expert filaments with IoU > 0.5 (the same number as the ResNet-34) but makes
   10% fewer false detections (493 vs 549); matched outlines overlap with Dice 0.80 on average.
 * For the ResNet-34, `pipeline.ipynb` re-created the Kaggle submission on the laptop **identical to the pixel**
@@ -142,8 +145,13 @@ confuse the darker edge with filaments.
 Settings were chosen on 60 of them, and the final numbers are reported on all 106 with a bootstrap 95% range.
 New ideas were also checked by choosing settings on one half and scoring on the other half.
 
-**Why is the public score lower than validation?** The same 0.8 ratio appears for all three methods, so the
+**Why is the public score lower than validation?** The same 0.8 ratio appears for all four methods, so the
 test images are harder rather than the model being over-tuned. Only half of the test set is public, so it is also noisy.
+
+**Why did the ResNet-50 not raise the public score above the ResNet-34?** The gain on validation is only
+0.008 PQ, smaller than the uncertainty (the 95% ranges overlap almost completely). On ~90 public test images a
+difference that small disappears when Kaggle rounds to two decimals. The hidden half of the test set decides the
+final ranking, and there the model with the better validation score is the safer choice.
 
 **What about the several experts per image?** Each expert's outlines are scored separately against the same
 prediction, as the organisers do. In training, each expert's outline is a separate example.
