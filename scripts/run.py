@@ -19,8 +19,20 @@ from filseg import CocoSet, ClassicalParams, PostParams, discover, list_images  
 from dataclasses import asdict  # noqa: E402
 from filseg import pipeline  # noqa: E402
 
-PP_FILE = "weights/postprocess_{}.json"
 CP_FILE = "weights/classical_params.json"
+FINAL_WEIGHTS = "weights/unet_r50.pt"   # final model (stored as .part1/.part2, joined on loading)
+
+
+def model_tag(method, weights):
+    """Name that links a model to its settings files: 'classical', or the checkpoint name without '.pt'
+    (weights/unet_r50.pt -> 'unet_r50', whose settings are weights/postprocess_unet_r50.json)."""
+    if method == "classical":
+        return "classical"
+    return "+".join(os.path.basename(w.strip())[: -len(".pt")] for w in weights.split(","))
+
+
+def pp_file(method, weights):
+    return f"weights/postprocess_{model_tag(method, weights)}.json"
 
 
 def split_ids(coco, val_frac=0.15, seed=0):
@@ -35,10 +47,10 @@ def split_ids(coco, val_frac=0.15, seed=0):
     return tr, va
 
 
-def load_pp(method):
-    path = PP_FILE.format(method)
+def load_pp(path):
     if os.path.exists(path):
         return PostParams(**json.load(open(path)))
+    print(f"note: {path} not found, using default post-processing settings")
     return PostParams()
 
 
@@ -57,7 +69,10 @@ def main():
     ap.add_argument("--minutes", type=float, default=120)
     ap.add_argument("--max-train", type=int, default=0, help="use at most N training images (0 = all)")
     ap.add_argument("--n-val", type=int, default=40, help="validation images used for tuning")
-    ap.add_argument("--weights", default="weights/unet.pt")
+    ap.add_argument("--weights", default=FINAL_WEIGHTS,
+                    help="checkpoint; several comma-separated checkpoints are averaged (ensemble)")
+    ap.add_argument("--pp", default=None,
+                    help="post-processing settings json (default: weights/postprocess_<checkpoint name>.json)")
     ap.add_argument("--out", default="submission.csv")
     # training options (left unset = the original defaults in unet.TrainConfig)
     ap.add_argument("--arch", choices=["small", "smp"], default=None)
@@ -67,6 +82,8 @@ def main():
     ap.add_argument("--lr", type=float, default=None)
     a = ap.parse_args()
     os.makedirs("weights", exist_ok=True)
+    tag = model_tag(a.method, a.weights)
+    pp_path = a.pp or pp_file(a.method, a.weights)
 
     if a.cmd == "inspect":
         discover(a.data)
@@ -86,7 +103,7 @@ def main():
         json.dump(asdict(cp), open(CP_FILE, "w"), indent=2)
         best, df = pipeline.tune_postprocess(coco, va_small, "classical", cp=cp)
         df.to_csv("weights/tune_classical.csv", index=False)
-        json.dump(asdict(best), open(PP_FILE.format("classical"), "w"), indent=2)
+        json.dump(asdict(best), open(pp_file("classical", a.weights), "w"), indent=2)
         pipeline.evaluate(coco, va_small, "classical", pp=best, cp=cp)
 
     elif a.cmd == "train":
@@ -104,8 +121,8 @@ def main():
 
         model = unet.load_model(a.weights) if a.method == "unet" else None
         best, df = pipeline.tune_postprocess(coco, va_small, a.method, model=model)
-        df.to_csv(f"weights/tune_{a.method}.csv", index=False)
-        json.dump(asdict(best), open(PP_FILE.format(a.method), "w"), indent=2)
+        df.to_csv(f"weights/tune_{tag}.csv", index=False)
+        json.dump(asdict(best), open(pp_path, "w"), indent=2)
         pipeline.evaluate(coco, va_small, a.method, model=model, pp=best)
 
     elif a.cmd == "tunefilter":
@@ -115,10 +132,10 @@ def main():
             from filseg import unet
 
             model = unet.load_model(a.weights)
-        pp0 = load_pp(a.method)
+        pp0 = load_pp(pp_path)
         best, df = pipeline.tune_filter(coco, va, a.method, model=model, pp=pp0, cp=load_cp())
-        df.to_csv(f"weights/tune_filter_{a.method}.csv", index=False)
-        json.dump(asdict(best), open(PP_FILE.format(a.method), "w"), indent=2)
+        df.to_csv(f"weights/tune_filter_{tag}.csv", index=False)
+        json.dump(asdict(best), open(pp_path, "w"), indent=2)
         print("filter OFF :", df[(df.min_dark == 0) & (df.min_elong == 0) & (df.max_rho >= 9) & (df.grow == 0)]
               .iloc[0][["PQ_dataset", "TP", "FP", "FN"]].to_dict())
         print("best       :", df.iloc[0].to_dict())
@@ -130,7 +147,9 @@ def main():
 
             model = unet.load_model(a.weights)
         paths = list_images(a.test_dir)
-        pipeline.make_submission(paths, a.method, a.out, model=model, pp=load_pp(a.method), cp=load_cp())
+        pp = load_pp(pp_path)
+        print(f"{a.method}: {a.weights if a.method == 'unet' else ''} with {pp_path}: {pp}")
+        pipeline.make_submission(paths, a.method, a.out, model=model, pp=pp, cp=load_cp())
 
 
 if __name__ == "__main__":

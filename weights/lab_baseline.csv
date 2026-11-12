@@ -1,0 +1,2 @@
+prob_threshold,min_fragment,hole_size,link_radius,min_instance,work_size,models,PQ_dataset,PQ_mean_per_image,SQ,RQ,TP,FP,FN,mean_IoU_matched,mean_Dice_matched,one_to_many,many_to_one
+0.65,60,200,0,400,1024,"{""gpu"": 1.0}",0.4104519317717544,0.3916968007375024,0.6775415570989838,0.6057959507741167,763,549,444,0.6775415570989834,0.8046655163827765,63,27

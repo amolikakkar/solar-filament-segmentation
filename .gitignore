@@ -9,7 +9,9 @@ logs/
 filament-seg/
 # duplicate of weights/unet.pt as downloaded from the Kaggle GPU run
 weights/gpu/
-# personal working notes (not part of the solution)
+# personal working notes and the dated copies of every Kaggle submission (not part of the solution)
 CLAUDE.md
-RESULTS_REPORT.md
-REPORT_DRAFT.md
+my_notes/
+submissions/
+# Version 4 Kaggle outputs (models that were tried; the one used is copied into weights/)
+weights/v4/

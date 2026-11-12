@@ -12,6 +12,7 @@ The network outputs a filament probability map; instances come from postprocess.
 """
 from __future__ import annotations
 
+import io
 import math
 import os
 import shutil
@@ -265,8 +266,26 @@ def evaluate_dice(model, val, dev) -> float:
     return 2 * inter / max(tot, 1)
 
 
+def read_checkpoint(path: str) -> dict:
+    """torch.load a checkpoint file. GitHub refuses files over 100 MB, so a large checkpoint is stored
+    as `<path>.part1`, `<path>.part2`, ... (see scripts/split_weights.py); if `<path>` itself is
+    missing, the parts are joined back in memory, byte for byte, before loading."""
+    if not os.path.exists(path) and os.path.exists(path + ".part1"):
+        data, k = bytearray(), 1
+        while os.path.exists(f"{path}.part{k}"):
+            with open(f"{path}.part{k}", "rb") as f:
+                data += f.read()
+            k += 1
+        return torch.load(io.BytesIO(bytes(data)), map_location="cpu", weights_only=False)
+    return torch.load(path, map_location="cpu", weights_only=False)
+
+
 def load_model(path: str) -> UNet:
-    ck = torch.load(path, map_location="cpu", weights_only=False)
+    """Load a checkpoint. A comma-separated list of paths loads several models (a list), whose
+    probability maps pipeline.semantic_unet averages with equal weights."""
+    if "," in path:
+        return [load_model(p.strip()) for p in path.split(",")]
+    ck = read_checkpoint(path)
     model = build_model(ck["cfg"], pretrained=False)  # weights come from the checkpoint
     model.load_state_dict(ck["state"])
     model.eval()
@@ -275,8 +294,13 @@ def load_model(path: str) -> UNet:
 
 
 @torch.no_grad()
-def predict_prob(model: UNet, img: np.ndarray, tta: bool = True):
-    """Raw 2048 image -> (probability map 2048x2048, disk)."""
+def predict_prob(model: UNet, img: np.ndarray, tta: bool | str = True):
+    """Raw 2048 image -> (probability map 2048x2048, disk).
+
+    tta=True   : average of 3 views (original, left-right flip, up-down flip) - the default.
+    tta="rot"  : the same 3 views plus the image turned by 90, 180 and 270 degrees (6 views).
+    tta=False  : the original view only.
+    """
     res = getattr(model, "res", 1024)
     x, disk = prepare_input(img, res)
     t = torch.from_numpy(x)[None, None]
@@ -286,6 +310,11 @@ def predict_prob(model: UNet, img: np.ndarray, tta: bool = True):
     if tta:
         prob = prob + torch.sigmoid(model(t.flip(-1))).flip(-1)
         prob = prob + torch.sigmoid(model(t.flip(-2))).flip(-2)
-        prob = prob / 3
+        if tta == "rot":
+            for k in (1, 2, 3):
+                prob = prob + torch.rot90(torch.sigmoid(model(torch.rot90(t, k, (-2, -1)))), -k, (-2, -1))
+            prob = prob / 6
+        else:
+            prob = prob / 3
     p = prob[0, 0].cpu().numpy()
     return cv2.resize(p, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_LINEAR), disk

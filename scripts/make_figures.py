@@ -1,8 +1,8 @@
 """Report figures (PNG, 300 dpi) from saved evaluation/tuning files; no model is run except for overlays.
 
-  python scripts/make_figures.py hist   --tags unet_gpu:U-Net_ResNet-34 unet_cpu:U-Net_small classical:Classical
-  python scripts/make_figures.py link   --tune weights/tune_unet.csv:U-Net weights/tune_classical.csv:Classical
-  python scripts/make_figures.py overlay --weights weights/unet.pt --pp weights/postprocess_unet.json --n 2
+  python scripts/make_figures.py hist   --tags unet_r50:U-Net_ResNet-50 unet_r34:U-Net_ResNet-34 classical_v2:Classical
+  python scripts/make_figures.py link   --tune weights/tune_unet_r34.csv:U-Net weights/tune_classical.csv:Classical
+  python scripts/make_figures.py overlay --weights weights/unet_r50.pt --pp weights/postprocess_unet_r50.json --n 2
 
 Output: figures/*.png
 """
@@ -169,8 +169,8 @@ def main():
     ap.add_argument("--entry", default=None, help="validation entry id for the pipeline figure")
     ap.add_argument("--tags", nargs="*", default=[])
     ap.add_argument("--tune", nargs="*", default=[])
-    ap.add_argument("--weights", default="weights/unet.pt")
-    ap.add_argument("--pp", default="weights/postprocess_unet.json")
+    ap.add_argument("--weights", default="weights/unet_r50.pt")
+    ap.add_argument("--pp", default="weights/postprocess_unet_r50.json")
     ap.add_argument("--method", default="unet")
     ap.add_argument("--n", type=int, default=2)
     a = ap.parse_args()

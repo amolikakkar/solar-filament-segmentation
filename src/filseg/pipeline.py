@@ -27,7 +27,11 @@ def semantic_classical(img, cp: ClassicalParams = ClassicalParams()):
 
 
 def semantic_unet(img, model, tta=True):
-    """Raw image -> probability map with the U-Net (thresholded later)."""
+    """Raw image -> probability map with the U-Net (thresholded later).
+    `model` may also be a list of U-Nets: their maps are averaged with equal weights."""
+    if isinstance(model, (list, tuple)):
+        w = np.float32(1.0 / len(model))
+        return sum(w * semantic_unet(img, m, tta) for m in model)
     from .unet import predict_prob
 
     prob, disk = predict_prob(model, img, tta=tta)
@@ -42,7 +46,7 @@ def predict_instances(img, method: str, model=None, pp: PostParams = PostParams(
         flat, disk = preprocess(img)          # same steps as semantic_classical()
         sem = segment_classical(flat, disk, cp)
     elif method == "unet":
-        sem = semantic_unet(img, model) >= pp.prob_threshold
+        sem = semantic_unet(img, model, tta=True if pp.tta == "flip" else pp.tta) >= pp.prob_threshold
         if pp.filter_on():
             flat, disk = preprocess(img)
     else:

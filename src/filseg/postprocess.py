@@ -33,6 +33,9 @@ class PostParams:
     # "Human-like" outline: grow each final instance by this many px (annotators' outlines
     # are slightly wider than the dark core). 0 = off.
     grow: int = 0
+    # U-Net test-time views, saved with the tuned settings so a prediction is reproduced exactly:
+    # "flip" = original + left-right + up-down flips (3 views); "rot" = also 90/180/270-degree turns (6 views).
+    tta: str = "flip"
 
     def filter_on(self) -> bool:
         return self.min_dark > 0 or self.min_elong > 0 or self.max_rho < 9.0

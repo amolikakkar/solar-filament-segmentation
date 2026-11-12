@@ -7,7 +7,7 @@ Writes:
   weights/eval_<tag>_pairs.csv   every overlapping (GT, prediction) pair: IoU and Dice, for histograms
 
 Usage:
-  python scripts/eval_val.py --method unet --weights weights/unet.pt --pp weights/postprocess_unet.json --tag unet
+  python scripts/eval_val.py --method unet --weights weights/unet_r50.pt --pp weights/postprocess_unet_r50.json --tag unet_r50
 """
 import argparse
 import json
@@ -24,17 +24,21 @@ from filseg import CocoSet, ClassicalParams, PostParams  # noqa: E402
 from filseg import pipeline  # noqa: E402
 from filseg.io import read_image  # noqa: E402
 from filseg.metrics import overlap_matrix, score_image, summarize, to_idx  # noqa: E402
+from filseg.postprocess import to_instances  # noqa: E402
 from run import split_ids  # noqa: E402
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--method", default="unet", choices=["classical", "unet"])
-    ap.add_argument("--weights", default="weights/unet.pt")
+    ap.add_argument("--weights", default="weights/unet_r50.pt")
     ap.add_argument("--pp", required=True, help="post-processing json")
     ap.add_argument("--cp", default="weights/classical_params.json")
     ap.add_argument("--tag", required=True)
     ap.add_argument("--max-files", type=int, default=0, help="0 = all validation files")
+    ap.add_argument("--probs", default=None,
+                    help="U-Net only: read the probability maps saved by cache_probs.py (data/_probs_<tag>) instead of "
+                         "running the network; same numbers (the maps are saved losslessly), sec_per_image not measured")
     ap.add_argument("--train-json", default="data/MAGFiLO_1.0_Kaggle_2026/train/MAGFiLO_1.0_Annotations_kaggle2026_train.json")
     ap.add_argument("--train-dir", default="data/MAGFiLO_1.0_Kaggle_2026/train/train_images")
     a = ap.parse_args()
@@ -44,9 +48,11 @@ def main():
     pp = PostParams(**json.load(open(a.pp)))
     cp = ClassicalParams(**json.load(open(a.cp))) if os.path.exists(a.cp) else ClassicalParams()
     model = None
-    if a.method == "unet":
+    if a.method == "unet" and not a.probs:
         from filseg import unet
         model = unet.load_model(a.weights)
+    if a.probs and (a.method != "unet" or pp.filter_on()):
+        raise SystemExit("--probs works for the U-Net without the false-positive filter only")
 
     by_file = {}
     for i in va:
@@ -56,10 +62,15 @@ def main():
 
     scores, pairs, rows, org_1n, org_n1, t_pred = [], [], [], 0, 0, 0.0
     for k, f in enumerate(files):
-        img = read_image(f)
-        t0 = time.time()
-        pred = pipeline.predict_instances(img, a.method, model, pp, cp)
-        t_pred += time.time() - t0
+        if a.probs:   # same steps as predict_instances, starting from the saved probability map
+            stem = os.path.splitext(os.path.basename(f))[0]
+            prob = np.load(os.path.join("data", f"_probs_{a.probs}", stem + ".npz"))["prob"]
+            pred = to_instances(prob >= pp.prob_threshold, pp)
+        else:
+            img = read_image(f)
+            t0 = time.time()
+            pred = pipeline.predict_instances(img, a.method, model, pp, cp)
+            t_pred += time.time() - t0
         pr = to_idx(pred)
         for e in by_file[f]:
             gt = to_idx(coco.instance_masks(e))
@@ -82,7 +93,8 @@ def main():
                   f"({t_pred / (k + 1):.1f} s/image)", flush=True)
 
     res = summarize(scores)
-    res.update({"files": len(files), "entries": len(scores), "sec_per_image": t_pred / max(len(files), 1),
+    res.update({"files": len(files), "entries": len(scores),
+                "sec_per_image": None if a.probs else t_pred / max(len(files), 1), "probs": a.probs,
                 "org_one_to_many_iou0": org_1n, "org_many_to_one_iou0": org_n1,
                 "mean_Dice_all_overlapping_pairs": float(np.mean([p["dice"] for p in pairs])) if pairs else 0.0,
                 "method": a.method, "weights": a.weights if a.method == "unet" else None, "pp": a.pp})

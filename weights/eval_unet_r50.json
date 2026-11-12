@@ -1,0 +1,28 @@
+{
+  "PQ_dataset": 0.4188319038581182,
+  "PQ_mean_per_image": 0.39665375753435195,
+  "SQ": 0.6760045735272249,
+  "RQ": 0.6195696305318718,
+  "TP": 763,
+  "FP": 493,
+  "FN": 444,
+  "mean_IoU_matched": 0.676004573527225,
+  "mean_Dice_matched": 0.803496839888359,
+  "one_to_many": 41,
+  "many_to_one": 36,
+  "files": 106,
+  "entries": 168,
+  "sec_per_image": 15.13,
+  "sec_per_image_note": "scores computed from the saved probability maps (data/_probs_r50, identical to running the network: checked on 10 files); speed measured by running the network on those 10 validation files",
+  "probs": "r50",
+  "org_one_to_many_iou0": 45,
+  "org_many_to_one_iou0": 39,
+  "mean_Dice_all_overlapping_pairs": 0.7047936811629935,
+  "method": "unet",
+  "weights": "weights\\unet_r50.pt",
+  "pp": "weights\\postprocess_unet_r50.json",
+  "PQ_dataset_ci95": [
+    0.399082004328416,
+    0.43863829905186835
+  ]
+}
